@@ -1,14 +1,14 @@
-# Lightweight-Speech-Denoising.axera — 轻量级语音增强部署方案
+# Lightweight-Speech-Denoising.axera — 轻量级语音增强部署
 
 本工程融合了 [RNNoise](https://github.com/xiph/rnnoise) 的 DSP 框架与 [GTCRN](https://github.com/Xiaobin-Rong/gtcrn) 的模型结构，
-在保留较好降噪效果的前提下，面向 Axera NPU 平台进行极致轻量化设计。
+在保留较好降噪效果的前提下，面向 Axera NPU 平台进行轻量化设计。
 
 **主要特点：**
-- **效果优先**：基于 GTCRN 框架训练，在低参数量下仍具备较强降噪能力
+- **效果优先**：基于 GTCRN 与 RNNoise 框架 ，在低参数量下仍具备较好降噪能力
 - **极致轻量**：最小模型体积不足 100 KB，CMM 占用少于 150 KB
 - **算子精简**：tiny_v5 / conv_se 为纯卷积模型，算子种类极少；其中 tiny_v5 可在算子支持有限的 AX525 平台量化部署
 - **流程完整**：提供从 ONNX 导出、量化校准到 C 板端推理的端到端部署流程
-- **多平台覆盖**：支持 x86、AX620Q、AX630C、AX650 推理及 AX620Q、AX630C、AX650、AX620L、AX525 NPU 量化
+- **多平台覆盖**：支持 x86_64、AX620Q、AX630C、AX650 推理及 AX620Q、AX630C、AX650、AX620L、AX525 NPU 量化
 
 ## 平台支持
 
@@ -47,12 +47,13 @@ Lightweight-Speech-Denoising.axera/
 │   ├── lib/
 │   │   ├── tiny_se_v5_dsp.c/h      # STFT/iSTFT、对数幅度特征提取
 │   │   └── rnnoise_src/            # kiss_fft + rnnoise DSP 库
-│   ├── models/                     # config.ini 文件；ONNX 和 axmodel 放此处
+│   ├── models/                     
 │   │   └── *_config.ini            # 各平台各模型配置文件
 │   ├── toolchain_ax620q.cmake      # AX620Q 交叉编译工具链配置
 │   ├── toolchain_ax650.cmake       # AX650/AX630C 交叉编译工具链配置
+│   ├── download_bsp.sh             # BSP SDK 下载脚本
 │   ├── build_x86.sh                # x86 编译
-│   ├── build_ax620q.sh             # AX620Q/E 交叉编译
+│   ├── build_ax620q.sh             # AX620Q 交叉编译
 │   ├── build_ax630c.sh             # AX630C 交叉编译
 │   ├── build_ax650.sh              # AX650 交叉编译
 │   ├── run_x86_all.sh              # x86 批量推理
@@ -70,7 +71,7 @@ Lightweight-Speech-Denoising.axera/
     │   ├── export_gtcrn_ax620e.py
     │   ├── export_gtcrn_ax650.py
     │   └── generate_all.py
-    ├── quant/                      # 量化工作区
+    ├── quant/                      # 量化
     │   ├── models/                 # 导出的 ONNX 文件
     │   ├── ax_configs/             # Pulsar2 量化配置
     │   └── calibration_data/       # 量化校准数据
@@ -90,8 +91,8 @@ Lightweight-Speech-Denoising.axera/
 
 | 模型 | ONNX 文件 | 输入形状 | 输出形状 | 推理模式 |
 |---|---|---|---|---|
-| **tiny_v5** | `tiny_v5_context.onnx` | `(1,1,34,257)` | `(1,1,34,17)` 频率掩膜 | 滑窗，step=6 |
-| **conv_se** | `conv_se_context.onnx` | `(1,1,64,257)` | `(1,1,64,129)` 频率掩膜 | 滑窗，step=6 |
+| **tiny_v5** | `tiny_v5_context.onnx` | `(1,1,34,257)` | `(1,1,34,17)`  | 滑窗，step=6 |
+| **conv_se** | `conv_se_context.onnx` | `(1,1,64,257)` | `(1,1,64,129)` | 滑窗，step=6 |
 | **GTCRN** | `gtcrn_no_scatter_less_input_optimized.onnx` | `(1,257,1,2)` + 6 cache 张量 | `(1,257,1,2)` + 6 cache 张量 | 帧级 cache |
 
 STFT 参数（三个模型相同）：`n_fft=512, hop_len=256, win_len=512, sample_rate=16000`
@@ -180,10 +181,29 @@ bash run_x86_all.sh ../test_wavs/mix.wav output/x86_all/
 
 #### 交叉编译
 
+**1. 下载 BSP SDK**
+
+```bash
+cd Lightweight-Speech-Denoising.axera/c_infer
+bash download_bsp.sh
+# 将在 c_infer/ 下克隆 ax650n_bsp_sdk/ 和 ax620e_bsp_sdk/
+```
+
+**2. 下载交叉编译器**
+
+| 平台 | 工具链 | 下载地址 |
+|------|--------|----------|
+| AX650 / AX630C | gcc-arm-9.2 aarch64 | https://developer.arm.com/-/media/Files/downloads/gnu-a/9.2-2019.12/binrel/gcc-arm-9.2-2019.12-x86_64-aarch64-none-linux-gnu.tar.xz |
+| AX620Q | arm-AX620E uclibc | https://github.com/AXERA-TECH/ax620q_bsp_sdk/releases/download/v2.0.0/arm-AX620E-linux-uclibcgnueabihf_V3_20240320.tgz |
+
+解压后记录工具链路径，填入下一步的 `build_*.sh`。
+
+**3. 编译**
+
 编译前先编辑对应 `build_*.sh`，将 `BSP_SDK_DIR` 和 `TOOLCHAIN_DIR` 改为实际路径：
 
 ```bash
-bash build_ax620q.sh   # AX620Q/E  → build_ax620q/test_se_denoise_ax（ARM32 uclibc）
+bash build_ax620q.sh   # AX620Q    → build_ax620q/test_se_denoise_ax（ARM32 uclibc）
 bash build_ax630c.sh   # AX630C    → build_ax630c/test_se_denoise_ax（ARM64 glibc）
 bash build_ax650.sh    # AX650     → build_ax650/test_se_denoise_ax （ARM64 glibc）
 ```
