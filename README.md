@@ -8,7 +8,7 @@
 - **极致轻量**：最小模型体积不足 100 KB，CMM 占用少于 150 KB
 - **算子精简**：tiny_v5 / conv_se 为纯卷积模型，算子种类极少；其中 tiny_v5 可在算子支持有限的 AX525 平台量化部署
 - **流程完整**：提供从 ONNX 导出、量化校准到 C 板端推理的端到端部署流程
-- **多平台覆盖**：支持 x86 Python/C 推理及 AX620Q、AX630C、AX650、AX620L、AX525 NPU 量化
+- **多平台覆盖**：支持 x86、AX620Q、AX630C、AX650 推理及 AX620Q、AX630C、AX650、AX620L、AX525 NPU 量化
 
 ## 平台支持
 
@@ -29,12 +29,16 @@
 Lightweight-Speech-Denoising.axera/
 ├── README.md
 ├── axmodels/                       # 量化后的 axmodel
+├── result/                         # 各平台板端推理结果音频
+│   ├── ax620q/
+│   ├── ax630c/
+│   └── ax650/
 │
 ├── c_infer/                        # C 推理工程
-│   ├── CMakeLists.txt              # CMake 构建（x86 / ax620q / ax620l / ax630c / ax650）
+│   ├── CMakeLists.txt              # CMake 构建（x86 / ax620q / ax630c / ax650）
 │   ├── src/
-│   │   ├── ax_ai_se_denoise.c      # x86 ONNX 推理引擎封装
-│   │   ├── ax_ai_se_denoise_ax.c   # AX NPU 推理引擎封装
+│   │   ├── ax_ai_se_denoise.c      # x86 ONNX 推理
+│   │   ├── ax_ai_se_denoise_ax.c   # AX NPU 推理
 │   │   ├── test_cache_denoise.c    # x86 主测试程序
 │   │   └── test_se_denoise_ax.c    # 板端主测试程序
 │   ├── inc/
@@ -46,16 +50,13 @@ Lightweight-Speech-Denoising.axera/
 │   ├── models/                     # config.ini 文件；ONNX 和 axmodel 放此处
 │   │   └── *_config.ini            # 各平台各模型配置文件
 │   ├── toolchain_ax620q.cmake      # AX620Q 交叉编译工具链配置
-│   ├── toolchain_ax620l.cmake      # AX620L 交叉编译工具链配置
 │   ├── toolchain_ax650.cmake       # AX650/AX630C 交叉编译工具链配置
 │   ├── build_x86.sh                # x86 编译
 │   ├── build_ax620q.sh             # AX620Q/E 交叉编译
-│   ├── build_ax620l.sh             # AX620L 交叉编译
 │   ├── build_ax630c.sh             # AX630C 交叉编译
 │   ├── build_ax650.sh              # AX650 交叉编译
 │   ├── run_x86_all.sh              # x86 批量推理
 │   ├── run_ax620q_all.sh           # AX620Q 板端批量推理
-│   ├── run_ax620l_all.sh           # AX620L 板端批量推理
 │   ├── run_ax630c_all.sh           # AX630C 板端批量推理
 │   └── run_ax650_all.sh            # AX650 板端批量推理
 │
@@ -200,6 +201,38 @@ bash build_ax650.sh    # AX650     → build_ax650/test_se_denoise_ax （ARM64 g
 - `test_wavs/mix.wav`
 
 上传后执行 `run_ax620q_all.sh` / `run_ax630c_all.sh` / `run_ax650_all.sh`。
+
+各平台降噪结果音频已保存至 `result/ax620q/`、`result/ax630c/`、`result/ax650/`。
+
+**AX620Q 执行结果：**
+
+```
+# sh run_ax620q_all.sh
+
+[tiny_v5]   Avg infer: 0.736 ms  |  RTF: 0.0332  |  Realtime: 30.1x
+[conv_se]   Avg infer: 14.938 ms |  RTF: 0.1970  |  Realtime: 5.1x
+[gtcrn]     Avg infer: 3.535 ms  |  RTF: 0.2295  |  Realtime: 4.4x
+```
+
+**AX630C 执行结果：**
+
+```
+# sh run_ax630c_all.sh
+
+[tiny_v5]   Avg infer: 0.587 ms  |  RTF: 0.0232  |  Realtime: 43.1x
+[conv_se]   Avg infer: 7.803 ms  |  RTF: 0.1092  |  Realtime: 9.2x
+[gtcrn]     Avg infer: 2.835 ms  |  RTF: 0.1820  |  Realtime: 5.5x
+```
+
+**AX650 执行结果：**
+
+```
+# sh run_ax650_all.sh
+
+[tiny_v5]   Avg infer: 0.160 ms  |  RTF: 0.0117  |  Realtime: 85.3x
+[conv_se]   Avg infer: 1.963 ms  |  RTF: 0.0365  |  Realtime: 27.4x
+[gtcrn]     Avg infer: 2.766 ms  |  RTF: 0.1756  |  Realtime: 5.7x
+```
 
 ---
 
