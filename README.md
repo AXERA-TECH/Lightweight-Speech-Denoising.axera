@@ -108,12 +108,11 @@ cd Lightweight-Speech-Denoising.axera/model_convert
 pip install -r python/requirements.txt
 # 主要依赖：torch, onnxruntime, onnx, onnxsim, scipy, soundfile, einops, omegaconf
 ```
-#### pyaxengine
 
-pyaxengine 是 NPU 的 Python API，用于板端 axmodel 推理：
-
+#### 安装pyaxengine
 ```bash
 # 详细安装请参考：https://github.com/AXERA-TECH/pyaxengine
+下载axengine-x.x.x-py3-none-any.whl，
 pip install pyaxengine
 ```
 
