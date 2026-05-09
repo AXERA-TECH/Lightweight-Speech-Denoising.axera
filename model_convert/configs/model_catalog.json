@@ -1,0 +1,51 @@
+{
+  "gtcrn": {
+    "display_name": "Official GTCRN 7-Input Less-Input Cache",
+    "backend": "gtcrn_cache",
+    "checkpoint": "",
+    "onnx": "quant/onnx_models/gtcrn_no_scatter_less_input_optimized.onnx",
+    "axmodel": "../axmodels/ax620E_gtcrn_setrain.axmodel",
+    "n_fft": 512,
+    "hop_len": 256,
+    "win_len": 512,
+    "sample_rate": 16000,
+    "input_freq": 257,
+    "output_freq": 257,
+    "t_model": 1,
+    "step": 1,
+    "supports_full": false,
+    "supports_sliding": false
+  },
+  "conv_se": {
+    "display_name": "Distilled ConvGTCRN Small V2 Context",
+    "backend": "mask_onnx",
+    "onnx": "quant/onnx_models/conv_se_context.onnx",
+    "axmodel": "../axmodels/ax620E_conv_se_setrain.axmodel",
+    "n_fft": 512,
+    "hop_len": 256,
+    "win_len": 512,
+    "sample_rate": 16000,
+    "input_freq": 257,
+    "output_freq": 129,
+    "t_model": 64,
+    "step": 6,
+    "supports_full": true,
+    "supports_sliding": true
+  },
+  "tiny_v5": {
+    "display_name": "Tiny Conv V5 Context",
+    "backend": "mask_onnx",
+    "onnx": "quant/onnx_models/tiny_v5_context.onnx",
+    "axmodel": "../axmodels/ax620E_tiny_v5_setrain.axmodel",
+    "n_fft": 512,
+    "hop_len": 256,
+    "win_len": 512,
+    "sample_rate": 16000,
+    "input_freq": 257,
+    "output_freq": 17,
+    "t_model": 34,
+    "step": 6,
+    "supports_full": true,
+    "supports_sliding": true
+  }
+}

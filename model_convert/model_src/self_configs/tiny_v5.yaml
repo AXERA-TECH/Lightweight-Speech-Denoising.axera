@@ -1,0 +1,12 @@
+model_name: tiny_conv_v5
+network_config:
+  n_fft: 512
+  hop_len: 256
+  win_len: 512
+  compress_channels: 12
+  hidden_channels: 28
+  skip_channels: 14
+  num_blocks: 6
+  kernel_size: [3, 3]
+  dilations: [1, 2, 4, 1, 2, 4]
+  compress_stages: 4

@@ -1,0 +1,36 @@
+{
+  "input": "onnx_models/tiny_v5_context.onnx",
+  "output_dir": "output/output_650_tiny_v5_context",
+  "output_name": "setrain_tiny_v5_context_650.axmodel",
+  "model_type": "ONNX",
+  "npu_mode": "NPU1",
+  "target_hardware": "AX650",
+  "onnx_opt": {
+    "disable_onnx_optimization": false,
+    "enable_onnxsim": true
+  },
+  "quant": {
+    "input_configs": [
+      {
+        "tensor_name": "input",
+        "calibration_dataset": "./datasets/input_tiny_v5.zip",
+        "calibration_format": "Numpy",
+        "calibration_size": -1
+      }
+    ],
+    "layer_configs": [
+      {
+        "start_tensor_names": ["DEFAULT"],
+        "end_tensor_names": ["DEFAULT"],
+        "data_type": "U16"
+      }
+    ],
+    "calibration_method": "MinMax",
+    "precision_analysis": true,
+    "precision_analysis_method": "EndToEnd",
+    "transformer_opt_level": 0
+  },
+  "compiler": {
+    "check": 2
+  }
+}

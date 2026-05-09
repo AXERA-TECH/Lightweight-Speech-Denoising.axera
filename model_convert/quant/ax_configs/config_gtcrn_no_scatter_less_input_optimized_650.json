@@ -1,0 +1,72 @@
+{
+  "input": "onnx_models/gtcrn_ax650_nopd_fixed.onnx",
+  "output_dir": "output/output_650_gtcrn_no_scatter_less_input_optimized",
+  "output_name": "setrain_gtcrn_no_scatter_less_input_optimized_650.axmodel",
+  "model_type": "ONNX",
+  "npu_mode": "NPU1",
+  "target_hardware": "AX650",
+  "onnx_opt": {
+    "disable_onnx_optimization": false,
+    "enable_onnxsim": true
+  },
+  "quant": {
+    "input_configs": [
+      {
+        "tensor_name": "mix",
+        "calibration_dataset": "./datasets/mix.zip",
+        "calibration_format": "Numpy",
+        "calibration_size": -1
+      },
+      {
+        "tensor_name": "en_conv_cache",
+        "calibration_dataset": "./datasets/en_conv_cache.zip",
+        "calibration_format": "Numpy",
+        "calibration_size": -1
+      },
+      {
+        "tensor_name": "de_conv_cache",
+        "calibration_dataset": "./datasets/de_conv_cache.zip",
+        "calibration_format": "Numpy",
+        "calibration_size": -1
+      },
+      {
+        "tensor_name": "en_tra_cache",
+        "calibration_dataset": "./datasets/en_tra_cache.zip",
+        "calibration_format": "Numpy",
+        "calibration_size": -1
+      },
+      {
+        "tensor_name": "de_tra_cache",
+        "calibration_dataset": "./datasets/de_tra_cache.zip",
+        "calibration_format": "Numpy",
+        "calibration_size": -1
+      },
+      {
+        "tensor_name": "inter_cache_0",
+        "calibration_dataset": "./datasets/inter_cache_0.zip",
+        "calibration_format": "Numpy",
+        "calibration_size": -1
+      },
+      {
+        "tensor_name": "inter_cache_1",
+        "calibration_dataset": "./datasets/inter_cache_1.zip",
+        "calibration_format": "Numpy",
+        "calibration_size": -1
+      }
+    ],
+    "layer_configs": [
+      {
+        "start_tensor_names": ["DEFAULT"],
+        "end_tensor_names": ["DEFAULT"],
+        "data_type": "U16"
+      }
+    ],
+    "calibration_method": "MinMax",
+    "precision_analysis": true,
+    "precision_analysis_method": "EndToEnd",
+    "transformer_opt_level": 0
+  },
+  "compiler": {
+    "check": 2
+  }
+}

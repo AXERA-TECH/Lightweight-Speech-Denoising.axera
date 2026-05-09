@@ -1,0 +1,11 @@
+model_name: conv_gtcrn_small_new_v2
+network_config:
+  n_fft: 512
+  hop_len: 256
+  win_len: 512
+  enc_channels: [16, 32, 64]
+  enc_dilations: [1, 2, 4, 1, 2, 4]
+  num_dual_path: 2
+  dp_n_layers: 3
+  dp_kernel_t: 5
+  dp_kernel_f: 5

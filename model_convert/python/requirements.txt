@@ -1,0 +1,11 @@
+einops
+numpy
+onnx
+onnxruntime
+onnxscript
+onnxsim
+omegaconf
+scipy
+soundfile
+torch
+tqdm
