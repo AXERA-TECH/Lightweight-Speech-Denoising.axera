@@ -28,7 +28,7 @@
 ```
 Lightweight-Speech-Denoising.axera/
 ├── README.md
-├── axmodels/                       # 量化后的 axmodel
+├── axmodels/                       # 量化后的 axmodel（可从 Releases 下载：https://github.com/AXERA-TECH/Lightweight-Speech-Denoising.axera/releases/tag/v1.0.0）
 ├── result/                         # 各平台板端推理结果音频
 │   ├── ax620q/
 │   ├── ax630c/
@@ -154,6 +154,8 @@ pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_6
 ```
 
 量化完成后将 `*.axmodel` 放入 `axmodels/`（板端 config.ini 中 `model_path` 已指向该目录）。
+
+> 也可直接从 [Releases v1.0.0](https://github.com/AXERA-TECH/Lightweight-Speech-Denoising.axera/releases/tag/v1.0.0) 下载已量化好的 axmodel，解压后拷贝至 `axmodels/` 即可跳过量化步骤。
 
 ---
 
