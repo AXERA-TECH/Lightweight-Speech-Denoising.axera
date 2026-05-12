@@ -49,10 +49,10 @@ pip install -r python/requirements.txt
 ```bash
 # cd Lightweight-Speech-Denoising.axera/model_convert
 
-# tiny_v5 & conv_se（同时生成 AX620L 专用 surgery 版本）
+# tiny_v5 & conv_se（同时生成 AX620L / AX637 专用 surgery 版本）
 python3 export/export_self_models.py
 
-# GTCRN — AX620Q/E / AX630C
+# GTCRN — AX620Q / AX630C / AX620L / AX637
 python3 export/export_gtcrn_ax620e.py
 
 # GTCRN — AX650（消除 Explicit Pad 节点）
@@ -63,14 +63,14 @@ python3 export/export_gtcrn_ax650.py
 
 | 文件 | 用途 |
 |---|---|
-| `quant/onnx_models/tiny_v5_context.onnx` | AX620Q/E / AX630C / AX650 量化 + x86 推理 |
-| `quant/onnx_models/tiny_v5_context_ax620l.onnx` | AX620L 量化专用 |
-| `quant/onnx_models/conv_se_context.onnx` | AX620Q/E / AX630C / AX650 量化 + x86 推理 |
-| `quant/onnx_models/conv_se_context_ax620l.onnx` | AX620L 量化专用 |
-| `quant/onnx_models/gtcrn_no_scatter_less_input_optimized.onnx` | AX620Q/E / AX630C 量化 + x86 推理 |
+| `quant/onnx_models/tiny_v5_context.onnx` | AX620Q / AX630C / AX650 量化 + x86 推理 |
+| `quant/onnx_models/tiny_v5_context_ax620l.onnx` | AX620L / AX637 量化专用 |
+| `quant/onnx_models/conv_se_context.onnx` | AX620Q / AX630C / AX650 量化 + x86 推理 |
+| `quant/onnx_models/conv_se_context_ax620l.onnx` | AX620L / AX637 量化专用 |
+| `quant/onnx_models/gtcrn_no_scatter_less_input_optimized.onnx` | AX620Q / AX630C / AX620L / AX637 量化 + x86 推理 |
 | `quant/onnx_models/gtcrn_ax650_nopd_fixed.onnx` | AX650 量化专用 |
 
-> **AX620L 注意**：AX620L 存在两个已知 Pulsar2 bug，`export_self_models.py` 已自动对 ONNX 做修复（dilation surgery + channel padding）。量化 AX620L 时必须使用 `*_ax620l.onnx`，其余平台使用原始 ONNX。
+> **AX620L / AX637 注意**：AX620L 存在两个已知 Pulsar2 bug，`export_self_models.py` 已自动对 ONNX 做修复（dilation surgery + channel padding）。量化 AX620L / AX637 的 tiny_v5 和 conv_se 时必须使用 `*_ax620l.onnx`，GTCRN 使用通用 ONNX，其余平台使用原始 ONNX。
 
 ---
 
@@ -113,7 +113,8 @@ quant/calibration_data/
 ## 5. Pulsar2 量化
 
 > 在 Pulsar2 主机上执行，需提前将本工程目录（含 `quant/onnx_models/`、`quant/calibration_data/`和`quant/ax_configs/`）拷贝过去。
-> - AX620L / AX525：量化已支持，板端推理待后续更新。
+> - AX620L / AX637 / AX525：量化已支持，板端推理待后续更新。
+> - AX637 与 AX620L 使用相同的 ONNX（tiny_v5 / conv_se 用 `*_ax620l.onnx`，GTCRN 用通用 ONNX），目前可量化，板端推理暂不支持。
 > - **AX525** 目前仅支持 tiny_v5 量化，且校准数据格式与配置文件与其他平台不同，后续单独补充。
 
 ```bash
@@ -121,12 +122,15 @@ cd Lightweight-Speech-Denoising.axera/model_convert/quant
 
 pulsar2 build --config ax_configs/config_tiny_v5_context_620E.json
 pulsar2 build --config ax_configs/config_tiny_v5_context_620L.json
+pulsar2 build --config ax_configs/config_tiny_v5_context_637.json
 pulsar2 build --config ax_configs/config_tiny_v5_context_650.json
 pulsar2 build --config ax_configs/config_conv_se_context_620E.json
 pulsar2 build --config ax_configs/config_conv_se_context_620L.json
+pulsar2 build --config ax_configs/config_conv_se_context_637.json
 pulsar2 build --config ax_configs/config_conv_se_context_650.json
 pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_620E.json
 pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_620L.json
+pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_637.json
 pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_650.json
 ```
 

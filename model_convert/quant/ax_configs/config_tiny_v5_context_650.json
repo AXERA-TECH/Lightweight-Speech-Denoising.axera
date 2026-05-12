@@ -1,7 +1,7 @@
 {
   "input": "onnx_models/tiny_v5_context.onnx",
   "output_dir": "output/output_650_tiny_v5_context",
-  "output_name": "setrain_tiny_v5_context_650.axmodel",
+  "output_name": "ax650_tiny_v5_setrain.axmodel",
   "model_type": "ONNX",
   "npu_mode": "NPU1",
   "target_hardware": "AX650",

@@ -1,10 +1,10 @@
 {
-  "input": "onnx_models/tiny_v5_context_ax620l.onnx",
-  "output_dir": "output/output_620L_tiny_v5_context",
-  "output_name": "ax620L_tiny_v5_setrain.axmodel",
+  "input": "onnx_models/conv_se_context_ax620l.onnx",
+  "output_dir": "output/output_637_conv_se_context",
+  "output_name": "ax637_conv_se_setrain.axmodel",
   "model_type": "ONNX",
   "npu_mode": "NPU1",
-  "target_hardware": "AX620L",
+  "target_hardware": "AX637",
   "onnx_opt": {
     "disable_onnx_optimization": false,
     "enable_onnxsim": true
@@ -13,7 +13,7 @@
     "input_configs": [
       {
         "tensor_name": "input",
-        "calibration_dataset": "./datasets/input_tiny_v5.zip",
+        "calibration_dataset": "./datasets/input_conv_se.zip",
         "calibration_format": "Numpy",
         "calibration_size": -1
       }

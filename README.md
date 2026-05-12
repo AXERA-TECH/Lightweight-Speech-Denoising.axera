@@ -8,17 +8,18 @@
 - **极致轻量**：最小模型体积不足 100 KB，CMM 占用少于 150 KB
 - **算子精简**：tiny_v5 / conv_se 为纯卷积模型，算子种类极少；其中 tiny_v5 可在算子支持有限的 AX525 平台量化部署
 - **流程完整**：提供从 ONNX 导出、量化校准到 C 板端推理的端到端部署流程
-- **多平台覆盖**：支持 x86_64、AX620Q、AX630C、AX650 推理及 AX620Q、AX630C、AX650、AX620L、AX525 NPU 量化
+- **多平台覆盖**：支持 x86_64、AX620Q、AX630C、AX650 推理及 AX620Q、AX630C、AX650、AX620L、AX637、AX525 NPU 量化
 
 ## 平台支持
 
-| 模型 | x86 Python | x86 C | AX620Q | AX630C | AX650 | AX620L | AX525 |
-|---|---|---|---|---|---|---|---|
-| tiny_v5 | ✅ | ✅ | ✅ | ✅ | ✅ | 可量化 | 可量化 ⁽¹⁾ |
-| conv_se | ✅ | ✅ | ✅ | ✅ | ✅ | 可量化 | 不支持 |
-| GTCRN   | ✅ | ✅ | ✅ | ✅ | ✅ | 可量化 | 不支持 |
+| 模型 | x86 Python | x86 C | AX620Q | AX630C | AX650 | AX620L | AX637 | AX525 |
+|---|---|---|---|---|---|---|---|---|
+| tiny_v5 | ✅ | ✅ | ✅ | ✅ | ✅ | 可量化 | 可量化 | 可量化 ⁽¹⁾ |
+| conv_se | ✅ | ✅ | ✅ | ✅ | ✅ | 可量化 | 可量化 | 不支持 |
+| GTCRN   | ✅ | ✅ | ✅ | ✅ | ✅ | 可量化 | 可量化 | 不支持 |
 
-> - AX620L / AX525：量化已支持，板端推理待后续更新。
+> - AX620L / AX637 / AX525：量化已支持，板端推理待后续更新。
+> - AX637 与 AX620L 使用相同的 ONNX（tiny_v5 / conv_se 用 `*_ax620l.onnx`，GTCRN 用通用 ONNX），目前可量化，板端推理暂不支持。
 > - ⁽¹⁾ AX525 目前仅支持 tiny_v5 量化，且校准数据格式与配置文件与其他平台不同，后续单独补充。
 
 ---
@@ -109,11 +110,12 @@ pip install -r python/requirements.txt
 # 主要依赖：torch, onnxruntime, onnx, onnxsim, scipy, soundfile, einops, omegaconf
 ```
 
-#### 安装pyaxengine
+#### 安装 pyaxengine
+
+从 [pyaxengine Releases](https://github.com/AXERA-TECH/pyaxengine/releases/latest) 下载对应版本的 `.whl` 文件，然后安装：
+
 ```bash
-# 详细安装请参考：https://github.com/AXERA-TECH/pyaxengine
-下载axengine-x.x.x-py3-none-any.whl，
-pip install pyaxengine
+pip install axengine-x.x.x-py3-none-any.whl
 ```
 
 ---
@@ -143,12 +145,15 @@ python3 export/generate_all.py --model all --num_samples 100
 cd quant
 pulsar2 build --config ax_configs/config_tiny_v5_context_620E.json
 pulsar2 build --config ax_configs/config_tiny_v5_context_620L.json
+pulsar2 build --config ax_configs/config_tiny_v5_context_637.json
 pulsar2 build --config ax_configs/config_tiny_v5_context_650.json
 pulsar2 build --config ax_configs/config_conv_se_context_620E.json
 pulsar2 build --config ax_configs/config_conv_se_context_620L.json
+pulsar2 build --config ax_configs/config_conv_se_context_637.json
 pulsar2 build --config ax_configs/config_conv_se_context_650.json
 pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_620E.json
 pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_620L.json
+pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_637.json
 pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_650.json
 ```
 
@@ -187,8 +192,15 @@ bash run_x86_all.sh ../test_wavs/mix.wav output/x86_all/
 ```bash
 cd Lightweight-Speech-Denoising.axera/c_infer
 bash download_bsp.sh
-# 将在 c_infer/ 下克隆 ax650n_bsp_sdk/ 和 ax620e_bsp_sdk/
+# 将在 c_infer/ 下下载解压 ax650n_bsp_sdk/ 和 ax620e_bsp_sdk/
 ```
+
+或者直接点击链接下载，BSP 下载源：
+
+| 平台 | 下载地址 |
+|------|----------|
+| AX650 | https://github.com/ZHEQIUSHUI/assets/releases/download/ax_3.6.2/msp_50_3.10.2.zip |
+| AX620Q / AX630C | https://github.com/ZHEQIUSHUI/assets/releases/download/ax_3.6.2/msp_20e_3.0.0.zip |
 
 **2. 下载交叉编译器**
 
@@ -211,7 +223,7 @@ bash build_ax650.sh    # AX650     → build_ax650/test_se_denoise_ax （ARM64 g
 
 #### 板端运行
 
-支持 **AX620Q、AX630C、AX650**。AX525 / AX620L 板端推理暂未支持，待后续更新。
+支持 **AX620Q、AX630C、AX650**。AX620L / AX637 / AX525 板端推理暂未支持，待后续更新。
 
 将以下文件/目录按原始层级结构上传到板端：
 

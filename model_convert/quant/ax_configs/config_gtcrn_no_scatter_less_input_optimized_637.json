@@ -1,10 +1,10 @@
 {
   "input": "onnx_models/gtcrn_no_scatter_less_input_optimized.onnx",
-  "output_dir": "output/output_620L_gtcrn_no_scatter_less_input_optimized",
-  "output_name": "ax620L_gtcrn_setrain.axmodel",
+  "output_dir": "output/output_637_gtcrn_no_scatter_less_input_optimized",
+  "output_name": "ax637_gtcrn_setrain.axmodel",
   "model_type": "ONNX",
   "npu_mode": "NPU1",
-  "target_hardware": "AX620L",
+  "target_hardware": "AX637",
   "onnx_opt": {
     "disable_onnx_optimization": false,
     "enable_onnxsim": true

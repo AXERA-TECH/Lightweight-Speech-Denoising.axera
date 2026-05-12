@@ -1,7 +1,7 @@
 {
   "input": "onnx_models/conv_se_context.onnx",
   "output_dir": "output/output_620E_conv_se_context",
-  "output_name": "setrain_conv_se_context_620E.axmodel",
+  "output_name": "ax620E_conv_se_setrain.axmodel",
   "model_type": "ONNX",
   "npu_mode": "NPU1",
   "target_hardware": "AX620E",
