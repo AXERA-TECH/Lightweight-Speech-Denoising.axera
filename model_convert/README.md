@@ -2,7 +2,7 @@
 
 > 本目录完成从 PyTorch 权重到 axmodel 的前置准备工作：ONNX 导出、Python 推理验证、量化校准数据生成，以及 Pulsar2 量化命令。
 
-> **开源说明**：`tiny_v5` 与 `conv_se` 为自研模型，当前暂不开放原始 `.pth` 权重和 `.onnx` 模型；已量化的 `.axmodel` 会随 Releases 提供，可用于板端推理。本文档保留这两个模型的导出、推理和量化命令；公开版本当前仅建议执行 GTCRN 的原始模型导出和 x86 ONNX 推理流程。
+> **说明**：`tiny_v5` 与 `conv_se` 为自研模型，当前暂不开放原始 `.pth` 权重和 `.onnx` 模型；已量化的 `.axmodel` 会随 Releases 提供，可用于板端推理。本工程保留这两个模型的导出、推理和量化命令；当前仅建议执行 GTCRN 的原始模型导出和 x86 ONNX 推理流程。
 
 ---
 
@@ -10,20 +10,29 @@
 
 ```
 model_convert/
+├── README.md
 ├── checkpoints/            # 预训练 PyTorch 权重
+│   └── gtcrn/
+│       └── model_trained_on_dns3.tar
 ├── configs/
 │   └── model_catalog.json  # 模型元信息（ONNX 路径、DSP 参数等）
 ├── model_src/              # PyTorch 模型定义
+│   ├── gtcrn/              # GTCRN 模型结构
+│   ├── models/             # tiny_v5 / conv_se 等模型结构
+│   └── self_configs/       # 自研模型配置
 ├── export/                 # ONNX 导出脚本 & 量化校准数据生成脚本
 │   ├── export_self_models.py
 │   ├── export_gtcrn_ax620e.py
 │   ├── export_gtcrn_ax650.py
 │   ├── generate_all.py
-│   └── verify_all_onnx.py
-├── quant/                  # 量化工作区（ONNX 模型、校准数据、Pulsar2 配置）
-│   ├── models/             # 导出的 ONNX 文件（脚本自动生成）
+│   ├── verify_all_onnx.py
+│   ├── pass_clear_gather.py
+│   ├── fix_dilation_expand_ax620l.py
+│   └── fix_channel_align_ax620l.py
+├── quant/                  # 量化工作区
+│   ├── onnx_models/        # 导出的 ONNX 文件
 │   ├── ax_configs/         # Pulsar2 量化配置文件
-│   └── calibration_data/   # 量化校准数据（脚本自动生成）
+│   └── calibration_data/   # 量化校准数据
 ├── python/                 # Python 推理脚本
 │   ├── infer.py            # ONNX 推理入口
 │   ├── denoise_core.py
@@ -46,7 +55,6 @@ pip install -r python/requirements.txt
 
 ## 2. 导出 ONNX
 
-公开版本当前仅导出 GTCRN。`tiny_v5` 与 `conv_se` 为自研模型，当前暂不开放原始 `.pth` 权重和 `.onnx` 模型；发布的 `.axmodel` 可直接用于板端推理。
 
 ```bash
 # cd Lightweight-Speech-Denoising.axera/model_convert
@@ -76,7 +84,6 @@ python3 export/export_self_models.py
 | `quant/onnx_models/gtcrn_no_scatter_less_input_optimized.onnx` | AX620Q / AX630C / AX620L / AX637 量化 + x86 推理 |
 | `quant/onnx_models/gtcrn_ax650_nopd_fixed.onnx` | AX650 量化专用 |
 
-> **AX620L / AX637 注意**：AX620L 存在两个已知 Pulsar2 bug，`export_self_models.py` 已自动对 ONNX 做修复（dilation surgery + channel padding）。量化 AX620L / AX637 的 tiny_v5 和 conv_se 时必须使用 `*_ax620l.onnx`，GTCRN 使用通用 ONNX，其余平台使用原始 ONNX。
 
 ---
 
@@ -88,12 +95,11 @@ python3 export/export_self_models.py
 python3 python/infer.py --model gtcrn    --input test_wavs/mix.wav --output out_gtcrn.wav
 ```
 
-`tiny_v5` 与 `conv_se` 为自研模型，当前暂不开放原始 `.pth` 权重和 `.onnx` 模型。如具备对应 ONNX，可继续使用：
+如具备所有 ONNX，可继续推理：
 
 ```bash
 python3 python/infer.py --model tiny_v5 --input test_wavs/mix.wav --output out_tiny_v5.wav
 python3 python/infer.py --model conv_se  --input test_wavs/mix.wav --output out_conv_se.wav
-python3 python/infer.py --model gtcrn    --input test_wavs/mix.wav --output out_gtcrn.wav
 ```
 
 ---
@@ -127,9 +133,6 @@ quant/calibration_data/
 ## 5. Pulsar2 量化
 
 > 在 Pulsar2 主机上执行，需提前将本工程目录（含 `quant/onnx_models/`、`quant/calibration_data/`和`quant/ax_configs/`）拷贝过去。
-> - AX620L / AX637 / AX525：量化已支持，板端推理待后续更新。
-> - AX637 与 AX620L 使用相同的 ONNX（tiny_v5 / conv_se 用 `*_ax620l.onnx`，GTCRN 用通用 ONNX），目前可量化，板端推理暂不支持。
-> - **AX525** 目前仅支持 tiny_v5 量化，且校准数据格式与配置文件与其他平台不同，后续单独补充。
 
 ```bash
 cd Lightweight-Speech-Denoising.axera/model_convert/quant
