@@ -2,6 +2,8 @@
 
 > 本目录完成从 PyTorch 权重到 axmodel 的前置准备工作：ONNX 导出、Python 推理验证、量化校准数据生成，以及 Pulsar2 量化命令。
 
+> **开源说明**：`tiny_v5` 与 `conv_se` 为自研模型，当前暂不开放原始 `.pth` 权重和 `.onnx` 模型；已量化的 `.axmodel` 会随 Releases 提供，可用于板端推理。本文档保留这两个模型的导出、推理和量化命令；公开版本当前仅建议执行 GTCRN 的原始模型导出和 x86 ONNX 推理流程。
+
 ---
 
 ## 目录结构
@@ -44,19 +46,23 @@ pip install -r python/requirements.txt
 
 ## 2. 导出 ONNX
 
-所有模型均从本工程 `checkpoints/` 导出，无需额外权重文件。
+公开版本当前仅导出 GTCRN。`tiny_v5` 与 `conv_se` 为自研模型，当前暂不开放原始 `.pth` 权重和 `.onnx` 模型；发布的 `.axmodel` 可直接用于板端推理。
 
 ```bash
 # cd Lightweight-Speech-Denoising.axera/model_convert
-
-# tiny_v5 & conv_se（同时生成 AX620L / AX637 专用 surgery 版本）
-python3 export/export_self_models.py
 
 # GTCRN — AX620Q / AX630C / AX620L / AX637
 python3 export/export_gtcrn_ax620e.py
 
 # GTCRN — AX650（消除 Explicit Pad 节点）
 python3 export/export_gtcrn_ax650.py
+```
+
+如具备 `tiny_v5` / `conv_se` 对应原始模型文件，可额外执行：
+
+```bash
+# tiny_v5 & conv_se（同时生成 AX620L / AX637 专用 surgery 版本）
+python3 export/export_self_models.py
 ```
 
 **输出文件（`quant/onnx_models/`）：**
@@ -79,6 +85,12 @@ python3 export/export_gtcrn_ax650.py
 ```bash
 # cd Lightweight-Speech-Denoising.axera/model_convert
 
+python3 python/infer.py --model gtcrn    --input test_wavs/mix.wav --output out_gtcrn.wav
+```
+
+`tiny_v5` 与 `conv_se` 为自研模型，当前暂不开放原始 `.pth` 权重和 `.onnx` 模型。如具备对应 ONNX，可继续使用：
+
+```bash
 python3 python/infer.py --model tiny_v5 --input test_wavs/mix.wav --output out_tiny_v5.wav
 python3 python/infer.py --model conv_se  --input test_wavs/mix.wav --output out_conv_se.wav
 python3 python/infer.py --model gtcrn    --input test_wavs/mix.wav --output out_gtcrn.wav
@@ -90,8 +102,10 @@ python3 python/infer.py --model gtcrn    --input test_wavs/mix.wav --output out_
 
 ```bash
 # cd Lightweight-Speech-Denoising.axera/model_convert
-python3 export/generate_all.py --model all --num_samples 100
+python3 export/generate_all.py --model gtcrn --num_samples 100
 ```
+
+如具备 `tiny_v5` / `conv_se` 对应原始模型文件，可使用 `python3 export/generate_all.py --model all --num_samples 100` 生成三模型校准数据。
 
 | 参数 | 说明 | 默认值 |
 |---|---|---|
@@ -120,6 +134,17 @@ quant/calibration_data/
 ```bash
 cd Lightweight-Speech-Denoising.axera/model_convert/quant
 
+pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_620E.json
+pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_620L.json
+pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_637.json
+pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_650.json
+```
+
+如具备 `tiny_v5` / `conv_se` 对应原始 ONNX，可继续执行：
+
+```bash
+cd Lightweight-Speech-Denoising.axera/model_convert/quant
+
 pulsar2 build --config ax_configs/config_tiny_v5_context_620E.json
 pulsar2 build --config ax_configs/config_tiny_v5_context_620L.json
 pulsar2 build --config ax_configs/config_tiny_v5_context_637.json
@@ -128,10 +153,6 @@ pulsar2 build --config ax_configs/config_conv_se_context_620E.json
 pulsar2 build --config ax_configs/config_conv_se_context_620L.json
 pulsar2 build --config ax_configs/config_conv_se_context_637.json
 pulsar2 build --config ax_configs/config_conv_se_context_650.json
-pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_620E.json
-pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_620L.json
-pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_637.json
-pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_650.json
 ```
 
 量化完成后，将 `*.axmodel` 放入 `../../axmodels/`（板端 config.ini 中 `model_path` 已指向该目录）。

@@ -10,14 +10,17 @@
 - **流程完整**：提供从 ONNX 导出、量化校准到 C 板端推理的端到端部署流程
 - **多平台覆盖**：支持 x86_64、AX620Q、AX630C、AX650 推理及 AX620Q、AX630C、AX650、AX620L、AX637、AX525 NPU 量化
 
+> **说明**：`tiny_v5` 与 `conv_se` 为自研模型，当前暂不开放 `.pth` 权重和 `.onnx` 模型；已量化的 `.axmodel` 随 Releases 提供，支持板端推理。本工程留这两个模型的onnx导出、推理。
+
 ## 平台支持
 
 | 模型 | x86 Python | x86 C | AX620Q | AX630C | AX650 | AX620L | AX637 | AX525 |
 |---|---|---|---|---|---|---|---|---|
-| tiny_v5 | ✅ | ✅ | ✅ | ✅ | ✅ | 可量化 | 可量化 | 可量化 ⁽¹⁾ |
-| conv_se | ✅ | ✅ | ✅ | ✅ | ✅ | 可量化 | 可量化 | 不支持 |
+| tiny_v5 | 需 ONNX | 需 ONNX | ✅ | ✅ | ✅ | 可量化 | 可量化 | 可量化 ⁽¹⁾ |
+| conv_se | 需 ONNX | 需 ONNX | ✅ | ✅ | ✅ | 可量化 | 可量化 | 不支持 |
 | GTCRN   | ✅ | ✅ | ✅ | ✅ | ✅ | 可量化 | 可量化 | 不支持 |
 
+> - ✅ 表示可推理。
 > - AX620L / AX637 / AX525：量化已支持，板端推理待后续更新。
 > - AX637 与 AX620L 使用相同的 ONNX（tiny_v5 / conv_se 用 `*_ax620l.onnx`，GTCRN 用通用 ONNX），目前可量化，板端推理暂不支持。
 > - ⁽¹⁾ AX525 目前仅支持 tiny_v5 量化，且校准数据格式与配置文件与其他平台不同，后续单独补充。
@@ -48,6 +51,8 @@ Lightweight-Speech-Denoising.axera/
 │   ├── lib/
 │   │   ├── tiny_se_v5_dsp.c/h      # STFT/iSTFT、对数幅度特征提取
 │   │   └── rnnoise_src/            # kiss_fft + rnnoise DSP 库
+│   ├── third_party/
+│   │   └── onnxruntime/            # x86 C 推理依赖的 ONNX Runtime
 │   ├── models/                     
 │   │   └── *_config.ini            # 各平台各模型配置文件
 │   ├── toolchain_ax620q.cmake      # AX620Q 交叉编译工具链配置
@@ -58,6 +63,7 @@ Lightweight-Speech-Denoising.axera/
 │   ├── build_ax630c.sh             # AX630C 交叉编译
 │   ├── build_ax650.sh              # AX650 交叉编译
 │   ├── run_x86_all.sh              # x86 批量推理
+│   ├── run_x86_gtcrn.sh            # x86 GTCRN 单模型推理
 │   ├── run_ax620q_all.sh           # AX620Q 板端批量推理
 │   ├── run_ax630c_all.sh           # AX630C 板端批量推理
 │   └── run_ax650_all.sh            # AX650 板端批量推理
@@ -128,20 +134,40 @@ pip install axengine-x.x.x-py3-none-any.whl
 
 ```bash
 cd Lightweight-Speech-Denoising.axera/model_convert
-pip install -r python/requirements.txt
 
-# 导出 ONNX
+# 导出 GTCRN ONNX
+python3 export/export_gtcrn_ax620e.py
+python3 export/export_gtcrn_ax650.py
+
+# Python 推理验证（GTCRN）
+python3 python/infer.py --model gtcrn --input test_wavs/mix.wav --output out_gtcrn.wav
+
+# 生成 GTCRN 量化校准数据
+python3 export/generate_all.py --model gtcrn --num_samples 100
+
+# Pulsar2 量化（GTCRN）
+cd quant
+pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_620E.json
+pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_620L.json
+pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_637.json
+pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_650.json
+```
+
+以下为所有模型的导出、验证和量化命令。
+
+```bash
+cd Lightweight-Speech-Denoising.axera/model_convert
+
 python3 export/export_self_models.py
 python3 export/export_gtcrn_ax620e.py
 python3 export/export_gtcrn_ax650.py
 
-# Python 推理验证
 python3 python/infer.py --model tiny_v5 --input test_wavs/mix.wav --output out_tiny_v5.wav
+python3 python/infer.py --model conv_se  --input test_wavs/mix.wav --output out_conv_se.wav
+python3 python/infer.py --model gtcrn    --input test_wavs/mix.wav --output out_gtcrn.wav
 
-# 生成量化校准数据
 python3 export/generate_all.py --model all --num_samples 100
 
-# Pulsar2 量化
 cd quant
 pulsar2 build --config ax_configs/config_tiny_v5_context_620E.json
 pulsar2 build --config ax_configs/config_tiny_v5_context_620L.json
@@ -167,13 +193,23 @@ pulsar2 build --config ax_configs/config_gtcrn_no_scatter_less_input_optimized_6
 
 #### x86 编译与运行
 
+> x86 C 推理依赖 ONNX Runtime，可下载
+> [onnxruntime-linux-x64-1.20.1.tgz](https://github.com/microsoft/onnxruntime/releases/download/v1.20.1/onnxruntime-linux-x64-1.20.1.tgz)，
+> 解压后将其中的 `include/`、`lib/` 等内容放入 `c_infer/third_party/onnxruntime/`。
+
 ```bash
 cd Lightweight-Speech-Denoising.axera/c_infer
 
-# 编译（需系统已安装 cmake、gcc；ONNX Runtime 库在 c_infer/third_party/onnxruntime/）
+# 编译（本地验证版本：cmake 3.16.3、gcc 9.4.0；
+# ONNX Runtime 库放在 c_infer/third_party/onnxruntime/）
 bash build_x86.sh
 
-# 批量推理（三模型）
+# 单模型推理（GTCRN）
+bash run_x86_gtcrn.sh ../test_wavs/mix.wav output/x86_gtcrn/out_gtcrn_7input_c_onnx.wav
+# 输出：
+#   output/x86_gtcrn/out_gtcrn_7input_c_onnx.wav
+
+# 批量推理（三模型，需具备 tiny_v5 / conv_se 对应 ONNX）
 bash run_x86_all.sh ../test_wavs/mix.wav output/x86_all/
 # 输出：
 #   output/x86_all/out_tiny_v5_context_c_onnx.wav
@@ -181,9 +217,8 @@ bash run_x86_all.sh ../test_wavs/mix.wav output/x86_all/
 #   output/x86_all/out_gtcrn_7input_c_onnx.wav
 ```
 
-> x86 C 推理使用原始 ONNX，需先将 `model_convert/quant/onnx_models/tiny_v5_context.onnx`、`conv_se_context.onnx`、
-> `gtcrn_no_scatter_less_input_optimized.onnx` 拷贝（或符号链接）到 `c_infer/models/`，
-> 文件名与 config.ini 中 `model_path` 一致。
+> x86 C 推理使用原始 ONNX。执行 GTCRN 时，需先生成
+> `model_convert/quant/onnx_models/gtcrn_no_scatter_less_input_optimized.onnx`。
 
 #### 交叉编译
 

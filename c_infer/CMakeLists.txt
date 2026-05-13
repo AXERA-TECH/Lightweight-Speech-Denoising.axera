@@ -9,7 +9,7 @@ set(INC_DIR  ${PROJECT_ROOT}/inc)
 set(SRC_DIR  ${PROJECT_ROOT}/src)
 set(LIB_DIR  ${PROJECT_ROOT}/lib)
 
-set(BUILD_TARGET "x86" CACHE STRING "Build target: x86 | ax525 | ax620l | ax620q | ax630c | ax650")
+set(BUILD_TARGET "x86" CACHE STRING "Build target: x86 | ax525 | ax620l | ax620q | ax630c | ax637 | ax650")
 message(STATUS "BUILD_TARGET = ${BUILD_TARGET}")
 
 if(BUILD_AX650)
@@ -23,39 +23,45 @@ elseif(BUILD_TARGET STREQUAL "ax525")
     set(IS_X86 FALSE)
     set(IS_AX_NPU TRUE)
     set(IS_AX525_FAMILY TRUE)
+    set(IS_AX637_FAMILY FALSE)
+    set(IS_AX650_FAMILY FALSE)
+    set(IS_AX620_FAMILY FALSE)
+elseif(BUILD_TARGET STREQUAL "ax637")
+    set(IS_X86 FALSE)
+    set(IS_AX_NPU TRUE)
+    set(IS_AX525_FAMILY FALSE)
+    set(IS_AX637_FAMILY TRUE)
     set(IS_AX650_FAMILY FALSE)
     set(IS_AX620_FAMILY FALSE)
 elseif(BUILD_TARGET STREQUAL "ax620l")
     set(IS_X86 FALSE)
     set(IS_AX_NPU TRUE)
     set(IS_AX525_FAMILY FALSE)
+    set(IS_AX637_FAMILY FALSE)
     set(IS_AX650_FAMILY FALSE)
     set(IS_AX620_FAMILY TRUE)
 elseif(BUILD_TARGET STREQUAL "ax650" OR BUILD_TARGET STREQUAL "ax630c")
     set(IS_X86 FALSE)
     set(IS_AX_NPU TRUE)
     set(IS_AX525_FAMILY FALSE)
+    set(IS_AX637_FAMILY FALSE)
     set(IS_AX650_FAMILY TRUE)
     set(IS_AX620_FAMILY FALSE)
 elseif(BUILD_TARGET STREQUAL "ax620q")
     set(IS_X86 FALSE)
     set(IS_AX_NPU TRUE)
     set(IS_AX525_FAMILY FALSE)
+    set(IS_AX637_FAMILY FALSE)
     set(IS_AX650_FAMILY FALSE)
     set(IS_AX620_FAMILY TRUE)
 else()
-    message(FATAL_ERROR "Unknown BUILD_TARGET: ${BUILD_TARGET}. Use x86 | ax525 | ax620l | ax620q | ax630c | ax650")
+    message(FATAL_ERROR "Unknown BUILD_TARGET: ${BUILD_TARGET}. Use x86 | ax525 | ax620l | ax620q | ax630c | ax637 | ax650")
 endif()
 
 # ========== ONNX Runtime (x86 版本) ==========
 if(IS_X86)
     set(ORT_SEARCH_PATHS
         ${PROJECT_ROOT}/third_party/onnxruntime
-        ${PROJECT_ROOT}/../third_party/onnxruntime
-        /tmp/onnxruntime-1.23.1
-        /tmp/onnxruntime-linux-x64-1.20.1
-        /root/onnxruntime-linux-x64-1.17.0
-        /root/workspace/rnnoise_py/third_party/onnxruntime
     )
     if(DEFINED ORT_ROOT AND NOT ORT_ROOT STREQUAL "")
         list(INSERT ORT_SEARCH_PATHS 0 ${ORT_ROOT})
@@ -71,7 +77,7 @@ if(IS_X86)
     endforeach()
     if(NOT ORT_INCLUDE_DIR)
         message(FATAL_ERROR "onnxruntime_c_api.h not found. "
-                "Set ORT_ROOT or copy onnxruntime to third_party/onnxruntime/")
+                "Set ORT_ROOT or copy onnxruntime to c_infer/third_party/onnxruntime/")
     endif()
     message(STATUS "ONNX Runtime include: ${ORT_INCLUDE_DIR}")
     message(STATUS "ONNX Runtime lib:     ${ORT_LIB_DIR}")
@@ -124,6 +130,11 @@ if(IS_AX525_FAMILY)
     set(BSP_INC_DIR ${BSP_SDK_DIR}/msp/out/arm_uclibc/include)
     set(BSP_LIB_DIR ${BSP_SDK_DIR}/msp/out/arm_uclibc/lib)
     message(STATUS "AX525 BSP SDK: ${BSP_SDK_DIR}")
+endif()
+
+if(IS_AX637_FAMILY)
+    message(FATAL_ERROR "AX637 BSP SDK is not provided yet. "
+            "The axmodel can be used for board-side inference when a matching BSP/runtime is available.")
 endif()
 
 include_directories(
@@ -232,7 +243,7 @@ install(DIRECTORY ${PROJECT_ROOT}/data/
 
 message(STATUS "========================================")
 message(STATUS " Cache-only SE Denoise Configuration")
-message(STATUS " (gtcrn + teacher + ax620 + ax525)")
+message(STATUS " (gtcrn + tiny_v5 + conv_se)")
 message(STATUS "========================================")
 message(STATUS "  C Compiler:  ${CMAKE_C_COMPILER}")
 message(STATUS "  System:      ${CMAKE_SYSTEM_NAME}")
